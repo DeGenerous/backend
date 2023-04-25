@@ -4,6 +4,7 @@ import (
 	"backend/ai"
 	"backend/routes"
 	"fmt"
+	"strings"
 
 	. "backend/config"
 	"github.com/gin-gonic/gin"
@@ -18,7 +19,7 @@ func CORS(c *gin.Context) {
 
 	for _, url := range Config.CORSUrls {
 		origin := c.Request.Header.Get("Origin")
-		if origin == url {
+		if strings.Contains(origin, url) {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
 		}
 	}
@@ -44,7 +45,7 @@ func main() {
 	r.POST("/start", routes.Start)
 	r.POST("/respond", routes.Respond)
 
-	if err := r.Run(":8080"); err != nil {
+	if err := r.Run(":3000"); err != nil {
 		fmt.Println(err)
 		return
 	}
