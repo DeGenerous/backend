@@ -14,6 +14,7 @@ import (
 const configPath = "./config.yaml"
 
 type config struct {
+	CORSUrls        []string                       `yaml:"cors_urls"`
 	Token           string                         `yaml:"token"`
 	InitialMessages []openai.ChatCompletionMessage `yaml:"initial_messages"`
 	Key             *rsa.PrivateKey
