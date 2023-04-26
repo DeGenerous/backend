@@ -1,13 +1,16 @@
 package main
 
 import (
-	"backend/ai"
-	"backend/routes"
 	"fmt"
+	"strconv"
 	"strings"
 
-	. "backend/config"
 	"github.com/gin-gonic/gin"
+
+	"backend/ai"
+	"backend/routes"
+
+	. "backend/config"
 )
 
 func CORS(c *gin.Context) {
@@ -44,8 +47,9 @@ func main() {
 	r.Use(CORS)
 	r.POST("/start", routes.Start)
 	r.POST("/respond", routes.Respond)
+	r.POST("/image", routes.Image)
 
-	if err := r.Run(":3000"); err != nil {
+	if err := r.Run(":" + strconv.Itoa(Config.Port)); err != nil {
 		fmt.Println(err)
 		return
 	}

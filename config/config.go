@@ -1,7 +1,6 @@
 package config
 
 import (
-	"backend/keys"
 	"log"
 	"os"
 
@@ -9,13 +8,17 @@ import (
 
 	"github.com/sashabaranov/go-openai"
 	"gopkg.in/yaml.v3"
+
+	"backend/keys"
 )
 
 const configPath = "./config.yaml"
 
 type config struct {
 	CORSUrls        []string                       `yaml:"cors_urls"`
+	Port            int                            `yaml:"port"`
 	Token           string                         `yaml:"token"`
+	ImagePrompt     string                         `yaml:"image_prompt"`
 	InitialMessages []openai.ChatCompletionMessage `yaml:"initial_messages"`
 	Key             *rsa.PrivateKey
 }

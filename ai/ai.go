@@ -2,10 +2,13 @@ package ai
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/sashabaranov/go-openai"
+
+	. "backend/config"
 )
 
 var client *openai.Client
@@ -39,6 +42,8 @@ func Generate(messages []openai.ChatCompletionMessage) (*Node, error) {
 		return nil, err
 	}
 
+	fmt.Println(respMsg)
+
 	message := strings.TrimSpace(messageRgx.FindStringSubmatch(respMsg)[1])
 
 	optionsRgx, err := regexp.Compile("\\d\\. (.*)\\n")
@@ -54,4 +59,22 @@ func Generate(messages []openai.ChatCompletionMessage) (*Node, error) {
 	}
 
 	return &Node{OriginalMessage: respMsg, Message: message, Options: options}, nil
+}
+
+func Image(prompt string) (string, error) {
+	resp, err := client.CreateImage(
+		context.Background(),
+		openai.ImageRequest{
+			Prompt:         prompt + " " + Config.ImagePrompt,
+			N:              1,
+			Size:           openai.CreateImageSize256x256,
+			ResponseFormat: openai.CreateImageResponseFormatB64JSON,
+		},
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	return resp.Data[0].B64JSON, nil
 }

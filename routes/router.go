@@ -1,14 +1,16 @@
 package routes
 
 import (
-	"backend/ai"
-	"github.com/sashabaranov/go-openai"
-	"net/http"
 	"strconv"
+
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
+	"github.com/sashabaranov/go-openai"
+
+	"backend/ai"
 
 	. "backend/config"
 )
@@ -57,13 +59,13 @@ func Start(c *gin.Context) {
 	})
 }
 
-type StoryResponse struct {
-	JWT    string `json:"jwt"`
-	Option int    `json:"option"`
-}
-
 func Respond(c *gin.Context) {
-	var response StoryResponse
+	type Body struct {
+		JWT    string `json:"jwt"`
+		Option int    `json:"option"`
+	}
+
+	var response Body
 	err := c.BindJSON(&response)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
@@ -106,4 +108,34 @@ func Respond(c *gin.Context) {
 		"options": resp.Options,
 		"jwt":     token,
 	})
+}
+
+func Image(c *gin.Context) {
+	type Body struct {
+		JWT string `json:"jwt"`
+	}
+
+	var response Body
+	err := c.BindJSON(&response)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	claims := &Claims{}
+	tkn, err := jwt.ParseWithClaims(response.JWT, claims, func(token *jwt.Token) (interface{}, error) {
+		return Config.Key.Public(), nil
+	})
+	if err != nil || !tkn.Valid {
+		c.String(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	resp, err := ai.Image(claims.Messages[len(claims.Messages)-1].Content)
+	if err != nil || !tkn.Valid {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.String(http.StatusOK, resp)
 }
