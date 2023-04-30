@@ -29,7 +29,7 @@ func signJWT(claims *Claims) (string, error) {
 
 func Start(c *gin.Context) {
 	id := uuid.NewString()
-	resp, err := ai.Generate(Config.InitialMessages) // + JWT messages
+	resp, err := ai.Generate(Config.InitialMessages)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return

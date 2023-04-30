@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -42,9 +43,12 @@ func Generate(messages []openai.ChatCompletionMessage) (*Node, error) {
 		return nil, err
 	}
 
-	fmt.Println(respMsg)
-
-	message := strings.TrimSpace(messageRgx.FindStringSubmatch(respMsg)[1])
+	bla := messageRgx.FindStringSubmatch(respMsg)
+	if len(bla) < 2 {
+		fmt.Println(respMsg)
+		return nil, errors.New(respMsg)
+	}
+	message := strings.TrimSpace(bla[1])
 
 	optionsRgx, err := regexp.Compile("\\d\\. (.*)\\n")
 	if err != nil {
