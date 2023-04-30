@@ -1,6 +1,7 @@
 package main
 
 import (
+	"backend/discord"
 	"fmt"
 	"strconv"
 	"strings"
@@ -41,7 +42,18 @@ func main() {
 		return
 	}
 
-	ai.Init(Config.Token)
+	ai.Init(Config.OpenAIToken)
+
+	if err := discord.Init(); err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println("Bot Joined")
+	defer func() {
+		err := discord.Close()
+		fmt.Println(err)
+	}()
 
 	r := gin.Default()
 	r.Use(CORS)
