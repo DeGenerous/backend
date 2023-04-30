@@ -212,7 +212,7 @@ func newSale() {
 				formatBigInt(r.Data.SettledsSimpleAuctions[0].Price),
 			),
 			Image: &discordgo.MessageEmbedImage{
-				URL: "https://gateway.moonsama.com/ipfs/QmZQFXFZ2KWmAiHPUajez1mbxyPqsiRLYGw4oftQKxhb15",
+				URL: img.Data.Tokens[0].Metadata.Image,
 			},
 		})
 
