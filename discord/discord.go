@@ -47,6 +47,12 @@ func register() error {
 				Description: "List latest sales of our NFT",
 			},
 		},
+		"lowest": {
+			handler: lowestSales,
+			command: &discordgo.ApplicationCommand{
+				Description: "List lowest sales of our NFT",
+			},
+		},
 	}
 
 	for name, h := range commands {

@@ -16,7 +16,9 @@ import (
 	. "backend/config"
 )
 
-type response struct {
+const IpfsGateway = "https://gateway.moonsama.com/ipfs/"
+
+type newestResponse struct {
 	Data struct {
 		SettledsSimpleAuctions []struct {
 			Price         string `json:"price"`
@@ -37,7 +39,16 @@ type imgResponse struct {
 	} `json:"data"`
 }
 
-func getQuery(limit int) (string, *bytes.Buffer) {
+type lowestResponse struct {
+	Data struct {
+		Auctions []struct {
+			ID     string `json:"assetId"`
+			Amount string `json:"amount"`
+		} `json:"simpleAuctions"`
+	} `json:"data"`
+}
+
+func getNewest(limit int) (string, *bytes.Buffer) {
 	const gqlUrl = "https://squid.subsquid.io/raresama-auction-exosama/graphql"
 	const gqlQuery = `
 		query settledSimpleAuctions {
@@ -74,12 +85,29 @@ func getImageQuery(id int) (string, *bytes.Buffer) {
 	return gqlUrl, bytes.NewBuffer([]byte(jsonQuery))
 }
 
+func getLowest(limit int) (string, *bytes.Buffer) {
+	const gqlUrl = "https://squid.subsquid.io/raresama-auction-exosama/graphql"
+	const gqlQuery = `
+		query GetOngoingSimpleAuctions {
+		  simpleAuctions(orderBy: amount_ASC, where: {assetAddress_eq: \"%s\", ongoing_eq: true}, limit: %d) {
+			assetId
+			amount
+		  }
+		}
+	`
+
+	query := strings.Replace(strings.Replace(fmt.Sprintf(gqlQuery, Config.ContractAddress, limit), "\n", " ", -1), "\t", " ", -1)
+	jsonQuery := fmt.Sprintf("{\"query\": \"%s\"}", query)
+
+	return gqlUrl, bytes.NewBuffer([]byte(jsonQuery))
+}
+
 func formatBigInt(number string) string {
 	return number[:len(number)-18]
 }
 
 func latestSales(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
-	url, query := getQuery(5)
+	url, query := getNewest(5)
 	resp, err := http.Post(url, "application/json", query)
 	if err != nil {
 		fmt.Println(err)
@@ -92,7 +120,7 @@ func latestSales(session *discordgo.Session, interaction *discordgo.InteractionC
 		return
 	}
 
-	var r response
+	var r newestResponse
 	if err := json.Unmarshal(body, &r); err != nil {
 		fmt.Println(err)
 		return
@@ -126,10 +154,58 @@ func latestSales(session *discordgo.Session, interaction *discordgo.InteractionC
 	}
 }
 
+func lowestSales(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
+	url, query := getLowest(5)
+	resp, err := http.Post(url, "application/json", query)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	var r lowestResponse
+	if err := json.Unmarshal(body, &r); err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	var fields []*discordgo.MessageEmbedField
+
+	for _, nft := range r.Data.Auctions {
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   "Inception Ark #" + nft.ID,
+			Value:  formatBigInt(nft.Amount) + " $SAMA",
+			Inline: false,
+		})
+	}
+
+	err = session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Title:  "Lowest sales:",
+					Fields: fields,
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+}
+
 var latestSale = ""
 
 func explorerInit() error {
-	url, query := getQuery(5)
+	url, query := getNewest(5)
 	resp, err := http.Post(url, "application/json", query)
 	if err != nil {
 		return err
@@ -141,7 +217,7 @@ func explorerInit() error {
 		return err
 	}
 
-	var r response
+	var r newestResponse
 	if err := json.Unmarshal(body, &r); err != nil {
 		fmt.Println(err)
 		return err
@@ -158,7 +234,7 @@ func tick() {
 }
 
 func newSale() {
-	url, query := getQuery(5)
+	url, query := getNewest(5)
 	resp, err := http.Post(url, "application/json", query)
 	if err != nil {
 		fmt.Println(err)
@@ -171,7 +247,7 @@ func newSale() {
 		return
 	}
 
-	var r response
+	var r newestResponse
 	if err := json.Unmarshal(body, &r); err != nil {
 		fmt.Println(err)
 		return
@@ -205,6 +281,8 @@ func newSale() {
 			return
 		}
 
+		image := strings.Replace(img.Data.Tokens[0].Metadata.Image, "ipfs://", IpfsGateway, 1)
+
 		_, err = session.ChannelMessageSendEmbed(Config.ChannelID, &discordgo.MessageEmbed{
 			Title: "New Sale",
 			Description: fmt.Sprintf("Inception Ark #%s\nBought for: %s $SAMA",
@@ -212,7 +290,7 @@ func newSale() {
 				formatBigInt(r.Data.SettledsSimpleAuctions[0].Price),
 			),
 			Image: &discordgo.MessageEmbedImage{
-				URL: img.Data.Tokens[0].Metadata.Image,
+				URL: image,
 			},
 		})
 

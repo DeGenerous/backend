@@ -50,7 +50,7 @@ func Generate(messages []openai.ChatCompletionMessage) (*Node, error) {
 	}
 	message := strings.TrimSpace(bla[1])
 
-	optionsRgx, err := regexp.Compile("\\d\\. (.*)\\n")
+	optionsRgx, err := regexp.Compile("Choice \\d\\. (.*)\\n")
 	if err != nil {
 		return nil, err
 	}

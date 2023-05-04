@@ -1,14 +1,12 @@
 package routes
 
 import (
-	"strconv"
-
-	"net/http"
-
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
+	"net/http"
 
 	"backend/ai"
 
@@ -83,7 +81,7 @@ func Respond(c *gin.Context) {
 
 	claims.Messages = append(claims.Messages, openai.ChatCompletionMessage{
 		Role:    "user",
-		Content: strconv.Itoa(response.Option),
+		Content: fmt.Sprintf("Choice: %d\nMessage %d", response.Option, len(claims.Messages)/2+1),
 	})
 
 	resp, err := ai.Generate(append(Config.InitialMessages, claims.Messages...))
