@@ -79,6 +79,16 @@ func Respond(c *gin.Context) {
 		return
 	}
 
+	if len(claims.Messages) > 7 {
+		messages, err := ai.Compress(claims.Messages[:len(claims.Messages)-1])
+		if err != nil {
+			c.String(http.StatusUnauthorized, err.Error())
+			return
+		}
+
+		claims.Messages = append(messages, claims.Messages[len(claims.Messages)-1])
+	}
+
 	claims.Messages = append(claims.Messages, openai.ChatCompletionMessage{
 		Role:    "user",
 		Content: fmt.Sprintf("Choice: %d\nMessage %d", response.Option, len(claims.Messages)/2+1),

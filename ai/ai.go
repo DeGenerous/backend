@@ -3,7 +3,6 @@ package ai
 import (
 	"context"
 	"errors"
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -22,6 +21,35 @@ type Node struct {
 	OriginalMessage string   `json:"original_message"`
 	Message         string   `json:"message"`
 	Options         []string `json:"options"`
+}
+
+func Compress(messages []openai.ChatCompletionMessage) ([]openai.ChatCompletionMessage, error) {
+	var prompt []openai.ChatCompletionMessage
+	copy(messages, prompt)
+	prompt = append(prompt, openai.ChatCompletionMessage{
+		Role:    "user",
+		Content: "Can you make a short story based on our conversation that should contain about a sentence from every step",
+	})
+
+	resp, err := client.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model:    openai.GPT3Dot5Turbo,
+			Messages: prompt,
+		},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+	respMsg := resp.Choices[0].Message.Content
+
+	ret := []openai.ChatCompletionMessage{{
+		Role:    "system",
+		Content: respMsg,
+	}}
+
+	return ret, err
 }
 
 func Generate(messages []openai.ChatCompletionMessage) (*Node, error) {
@@ -45,7 +73,6 @@ func Generate(messages []openai.ChatCompletionMessage) (*Node, error) {
 
 	bla := messageRgx.FindStringSubmatch(respMsg)
 	if len(bla) < 2 {
-		fmt.Println(respMsg)
 		return nil, errors.New(respMsg)
 	}
 	message := strings.TrimSpace(bla[1])

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"backend/discord"
 	"fmt"
 	"strconv"
 	"strings"
@@ -9,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"backend/ai"
+	"backend/discord"
 	"backend/routes"
 
 	. "backend/config"
