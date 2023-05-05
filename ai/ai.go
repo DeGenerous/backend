@@ -25,7 +25,7 @@ type Node struct {
 
 func Compress(messages []openai.ChatCompletionMessage) ([]openai.ChatCompletionMessage, error) {
 	var prompt []openai.ChatCompletionMessage
-	copy(messages, prompt)
+	copy(prompt, messages)
 	prompt = append(prompt, openai.ChatCompletionMessage{
 		Role:    "user",
 		Content: "Can you make a short story based on our conversation that should contain about a sentence from every step",
