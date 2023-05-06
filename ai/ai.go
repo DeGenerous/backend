@@ -82,7 +82,7 @@ func Generate(messages []openai.ChatCompletionMessage) (*Node, error) {
 		return nil, err
 	}
 
-	found := optionsRgx.FindAllStringSubmatch(respMsg+"\n", -1)
+	found := optionsRgx.FindAllStringSubmatch(respMsg[len(bla):]+"\n", -1)
 
 	var options []string
 	for _, f := range found {
