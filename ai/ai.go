@@ -18,17 +18,17 @@ func Init(token string) {
 }
 
 type Node struct {
-	OriginalMessage string   `json:"original_message"`
-	Message         string   `json:"message"`
-	Options         []string `json:"options"`
+	OriginalMessage string   `json:"original_message" yaml:"message"`
+	Message         string   `json:"message" yaml:"-"`
+	Options         []string `json:"options" yaml:"-"`
 }
 
 func Compress(messages []openai.ChatCompletionMessage) ([]openai.ChatCompletionMessage, error) {
-	var prompt []openai.ChatCompletionMessage
+	prompt := make([]openai.ChatCompletionMessage, len(messages))
 	copy(prompt, messages)
 	prompt = append(prompt, openai.ChatCompletionMessage{
 		Role:    "user",
-		Content: "Can you make a short story based on our conversation that should contain about a sentence from every step",
+		Content: "Write a short story based on our conversation that should contain about a sentence from every step",
 	})
 
 	resp, err := client.CreateChatCompletion(
@@ -77,7 +77,7 @@ func Generate(messages []openai.ChatCompletionMessage) (*Node, error) {
 	}
 	message := strings.TrimSpace(bla[1])
 
-	optionsRgx, err := regexp.Compile("Choice \\d\\. (.*)\\n")
+	optionsRgx, err := regexp.Compile("Choice \\d[.:] (.*)\\n")
 	if err != nil {
 		return nil, err
 	}

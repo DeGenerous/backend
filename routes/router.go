@@ -16,6 +16,7 @@ import (
 type Claims struct {
 	ID       string                         `json:"id"`
 	Messages []openai.ChatCompletionMessage `json:"messages"`
+	Step     int                            `json:"step"`
 	jwt.RegisteredClaims
 }
 
@@ -42,6 +43,7 @@ func Start(c *gin.Context) {
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: nil,
 		},
+		Step: 1,
 	}
 
 	token, err := signJWT(claims)
@@ -79,6 +81,8 @@ func Respond(c *gin.Context) {
 		return
 	}
 
+	claims.Step++
+
 	if len(claims.Messages) > 7 {
 		messages, err := ai.Compress(claims.Messages[:len(claims.Messages)-1])
 		if err != nil {
@@ -91,10 +95,12 @@ func Respond(c *gin.Context) {
 
 	claims.Messages = append(claims.Messages, openai.ChatCompletionMessage{
 		Role:    "user",
-		Content: fmt.Sprintf("Choice: %d\nMessage %d", response.Option, len(claims.Messages)/2+1),
+		Content: fmt.Sprintf("Choice: %d\nMessage %d", response.Option, claims.Step),
 	})
 
-	resp, err := ai.Generate(append(Config.InitialMessages, claims.Messages...))
+	messages := append([]openai.ChatCompletionMessage{}, Config.InitialMessages...)
+	messages = append(messages, claims.Messages...)
+	resp, err := ai.Generate(messages)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
