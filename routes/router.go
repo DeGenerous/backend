@@ -83,7 +83,32 @@ func Respond(c *gin.Context) {
 
 	claims.Step++
 
-	if len(claims.Messages) > 7 {
+	if claims.Step >= Config.MaxSteps {
+		message, err := ai.Finish(claims.Messages)
+		if err != nil {
+			c.String(http.StatusUnauthorized, err.Error())
+			return
+		}
+
+		claims.Messages = append(claims.Messages, openai.ChatCompletionMessage{
+			Role:    "system",
+			Content: message,
+		})
+
+		token, err := signJWT(claims)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": message,
+			"options": []string{},
+			"jwt":     token,
+		})
+
+		return
+	} else if len(claims.Messages) > 7 {
 		messages, err := ai.Compress(claims.Messages[:len(claims.Messages)-1])
 		if err != nil {
 			c.String(http.StatusUnauthorized, err.Error())
