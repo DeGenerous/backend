@@ -23,35 +23,6 @@ type Node struct {
 	Options         []string `json:"options" yaml:"-"`
 }
 
-func Compress(messages []openai.ChatCompletionMessage) ([]openai.ChatCompletionMessage, error) {
-	prompt := make([]openai.ChatCompletionMessage, len(messages))
-	copy(prompt, messages)
-	prompt = append(prompt, openai.ChatCompletionMessage{
-		Role:    "user",
-		Content: "Write a short story based on our conversation that should contain about a sentence from every step",
-	})
-
-	resp, err := client.CreateChatCompletion(
-		context.Background(),
-		openai.ChatCompletionRequest{
-			Model:    openai.GPT3Dot5Turbo,
-			Messages: prompt,
-		},
-	)
-
-	if err != nil {
-		return nil, err
-	}
-	respMsg := resp.Choices[0].Message.Content
-
-	ret := []openai.ChatCompletionMessage{{
-		Role:    "system",
-		Content: respMsg,
-	}}
-
-	return ret, err
-}
-
 func Generate(messages []openai.ChatCompletionMessage) (*Node, error) {
 	resp, err := client.CreateChatCompletion(
 		context.Background(),
@@ -90,6 +61,50 @@ func Generate(messages []openai.ChatCompletionMessage) (*Node, error) {
 	}
 
 	return &Node{OriginalMessage: respMsg, Message: message, Options: options}, nil
+}
+
+func Compress(messages []openai.ChatCompletionMessage) ([]openai.ChatCompletionMessage, error) {
+	prompt := make([]openai.ChatCompletionMessage, len(messages)+len(Config.CompressMessages))
+	copy(prompt, messages)
+	copy(prompt[len(messages):], Config.CompressMessages)
+
+	resp, err := client.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model:    openai.GPT3Dot5Turbo,
+			Messages: prompt,
+		},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	ret := []openai.ChatCompletionMessage{{
+		Role:    "system",
+		Content: resp.Choices[0].Message.Content,
+	}}
+	return ret, err
+}
+
+func Finish(messages []openai.ChatCompletionMessage) (string, error) {
+	prompt := make([]openai.ChatCompletionMessage, len(messages)+len(Config.FinishMessages))
+	copy(prompt, messages)
+	copy(prompt[len(messages):], Config.FinishMessages)
+
+	resp, err := client.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model:    openai.GPT3Dot5Turbo,
+			Messages: prompt,
+		},
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	return resp.Choices[0].Message.Content, err
 }
 
 func Image(prompt string) (string, error) {
