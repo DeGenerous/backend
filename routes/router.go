@@ -85,9 +85,9 @@ func Respond(c *gin.Context) {
 
 	var message string
 	if claims.Step >= Config.MaxSteps {
-		message = fmt.Sprintf("This is message number %d, you should finish the story now. I choose option %d.", response.Option, claims.Step)
+		message = fmt.Sprintf("This is message number %d, you should finish the story now. I choose option %d.", claims.Step, response.Option)
 	} else {
-		message = fmt.Sprintf("This is message number %d. I choose option %d.", response.Option, claims.Step)
+		message = fmt.Sprintf("This is message number %d. I choose option %d.", claims.Step, response.Option)
 	}
 
 	claims.Messages = append(claims.Messages, openai.ChatCompletionMessage{
