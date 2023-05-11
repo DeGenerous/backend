@@ -2,11 +2,10 @@ package ai
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"regexp"
-	"strings"
-
 	"github.com/sashabaranov/go-openai"
+	"strings"
 
 	. "backend/config"
 )
@@ -18,49 +17,53 @@ func Init(token string) {
 }
 
 type Node struct {
-	OriginalMessage string   `json:"original_message" yaml:"message"`
-	Message         string   `json:"message" yaml:"-"`
-	Options         []string `json:"options" yaml:"-"`
+	OriginalMessage string   `json:"original_message" yaml:"-"`
+	Message         string   `json:"story" yaml:"story"`
+	Options         []string `json:"options" yaml:"options,omitempty"`
+	End             bool     `json:"end" yaml:"end,omitempty"`
+	Summary         string   `json:"summary" yaml:"summary,omitempty"`
 }
 
+const maxTries = 3
+
 func Generate(messages []openai.ChatCompletionMessage) (*Node, error) {
-	resp, err := client.CreateChatCompletion(
-		context.Background(),
-		openai.ChatCompletionRequest{
-			Model:    openai.GPT3Dot5Turbo,
-			Messages: messages,
-		},
-	)
+	var resp openai.ChatCompletionResponse
+	var err error
 
-	if err != nil {
-		return nil, err
+	for tries := 0; tries < maxTries; tries++ {
+		resp, err = client.CreateChatCompletion(
+			context.Background(),
+			openai.ChatCompletionRequest{
+				Model:    openai.GPT3Dot5Turbo,
+				Messages: messages,
+			},
+		)
+
+		if err != nil {
+			continue
+		}
+
+		respMsg := resp.Choices[0].Message.Content
+		jsonStart := strings.Index(respMsg, "{")
+		jsonEnd := strings.Index(respMsg, "}") + 1
+
+		if jsonStart == -1 || jsonEnd == -1 {
+			err = errors.New("unknown response")
+			continue
+		}
+
+		respMsg = respMsg[jsonStart:jsonEnd]
+		var node Node
+		if err = json.Unmarshal([]byte(respMsg), &node); err != nil {
+			continue
+		}
+
+		node.OriginalMessage = respMsg
+
+		return &node, nil
 	}
-	respMsg := resp.Choices[0].Message.Content
 
-	messageRgx, err := regexp.Compile("^((.|\\n)*)Options:")
-	if err != nil {
-		return nil, err
-	}
-
-	bla := messageRgx.FindStringSubmatch(respMsg)
-	if len(bla) < 2 {
-		return nil, errors.New(respMsg)
-	}
-	message := strings.TrimSpace(bla[1])
-
-	optionsRgx, err := regexp.Compile("Choice \\d[.:] (.*)\\n")
-	if err != nil {
-		return nil, err
-	}
-
-	found := optionsRgx.FindAllStringSubmatch(respMsg[len(bla):]+"\n", -1)
-
-	var options []string
-	for _, f := range found {
-		options = append(options, f[1])
-	}
-
-	return &Node{OriginalMessage: respMsg, Message: message, Options: options}, nil
+	return nil, err
 }
 
 func Compress(messages []openai.ChatCompletionMessage) ([]openai.ChatCompletionMessage, error) {
@@ -68,14 +71,22 @@ func Compress(messages []openai.ChatCompletionMessage) ([]openai.ChatCompletionM
 	copy(prompt, messages)
 	copy(prompt[len(messages):], Config.CompressMessages)
 
-	resp, err := client.CreateChatCompletion(
-		context.Background(),
-		openai.ChatCompletionRequest{
-			Model:    openai.GPT3Dot5Turbo,
-			Messages: prompt,
-		},
-	)
+	var resp openai.ChatCompletionResponse
+	var err error
 
+	for tries := 0; tries < maxTries; tries++ {
+		resp, err = client.CreateChatCompletion(
+			context.Background(),
+			openai.ChatCompletionRequest{
+				Model:    openai.GPT3Dot5Turbo,
+				Messages: prompt,
+			},
+		)
+
+		if err == nil {
+			break
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +95,8 @@ func Compress(messages []openai.ChatCompletionMessage) ([]openai.ChatCompletionM
 		Role:    "system",
 		Content: resp.Choices[0].Message.Content,
 	}}
-	return ret, err
+
+	return ret, nil
 }
 
 func Finish(messages []openai.ChatCompletionMessage) (string, error) {
@@ -92,19 +104,27 @@ func Finish(messages []openai.ChatCompletionMessage) (string, error) {
 	copy(prompt, messages)
 	copy(prompt[len(messages):], Config.FinishMessages)
 
-	resp, err := client.CreateChatCompletion(
-		context.Background(),
-		openai.ChatCompletionRequest{
-			Model:    openai.GPT3Dot5Turbo,
-			Messages: prompt,
-		},
-	)
+	var resp openai.ChatCompletionResponse
+	var err error
 
+	for tries := 0; tries < maxTries; tries++ {
+		resp, err = client.CreateChatCompletion(
+			context.Background(),
+			openai.ChatCompletionRequest{
+				Model:    openai.GPT3Dot5Turbo,
+				Messages: prompt,
+			},
+		)
+
+		if err == nil {
+			break
+		}
+	}
 	if err != nil {
 		return "", err
 	}
 
-	return resp.Choices[0].Message.Content, err
+	return resp.Choices[0].Message.Content, nil
 }
 
 func Image(prompt string) (string, error) {
