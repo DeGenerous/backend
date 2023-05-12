@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
@@ -83,11 +84,18 @@ func Respond(c *gin.Context) {
 
 	claims.Step++
 
+	lastNode := ai.Node{}
+	lastMessage := claims.Messages[len(claims.Messages)-1].Content
+	if err = json.Unmarshal([]byte(lastMessage), &lastNode); err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	var message string
 	if claims.Step >= Config.MaxSteps {
-		message = fmt.Sprintf("This is message number %d, you should finish the story now. I choose option %d.", claims.Step, response.Option)
+		message = fmt.Sprintf("This is message number %d, you should finish the story now. I choose option number %d: %s. Remember to only answer in JSON format.", claims.Step, response.Option, lastNode.Options[response.Option-1])
 	} else {
-		message = fmt.Sprintf("This is message number %d. I choose option %d.", claims.Step, response.Option)
+		message = fmt.Sprintf("This is message number %d. I choose option number %d: %s. Remember to only answer in JSON format.", claims.Step, response.Option, lastNode.Options[response.Option-1])
 	}
 
 	claims.Messages = append(claims.Messages, openai.ChatCompletionMessage{
