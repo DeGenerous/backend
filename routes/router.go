@@ -38,7 +38,7 @@ func Start(c *gin.Context) {
 	claims := &Claims{
 		ID: id,
 		Messages: []openai.ChatCompletionMessage{{
-			Role:    "system",
+			Role:    "assistant",
 			Content: resp.OriginalMessage,
 		}},
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -112,7 +112,7 @@ func Respond(c *gin.Context) {
 	}
 
 	claims.Messages = append(claims.Messages, openai.ChatCompletionMessage{
-		Role:    "system",
+		Role:    "assistant",
 		Content: resp.OriginalMessage,
 	})
 
