@@ -15,9 +15,10 @@ import (
 )
 
 type Claims struct {
-	ID       string                         `json:"id"`
-	Messages []openai.ChatCompletionMessage `json:"messages"`
-	Step     int                            `json:"step"`
+	ID          string                         `json:"id"`
+	Messages    []openai.ChatCompletionMessage `json:"messages"`
+	Step        int                            `json:"step"`
+	Compression *ai.Compression                `json:"compression"`
 	jwt.RegisteredClaims
 }
 
@@ -29,7 +30,7 @@ func signJWT(claims *Claims) (string, error) {
 
 func Start(c *gin.Context) {
 	id := uuid.NewString()
-	resp, err := ai.Generate(Config.InitialMessages)
+	resp, err := ai.Generate(Config.PromptMessages)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
@@ -44,7 +45,8 @@ func Start(c *gin.Context) {
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: nil,
 		},
-		Step: 1,
+		Step:        1,
+		Compression: nil,
 	}
 
 	token, err := signJWT(claims)
@@ -91,9 +93,13 @@ func Respond(c *gin.Context) {
 		return
 	}
 
+	if claims.Compression != nil {
+
+	}
+
 	var message string
 	if claims.Step >= Config.MaxSteps {
-		message = fmt.Sprintf("This is message number %d, you should finish the story now. I choose option number %d: %s. Remember to only answer in JSON format.", claims.Step, response.Option, lastNode.Options[response.Option-1])
+		message = fmt.Sprintf("This is message number %d, finish the story now. I choose option number %d: %s. Remember to only answer in JSON format.", claims.Step, response.Option, lastNode.Options[response.Option-1])
 	} else {
 		message = fmt.Sprintf("This is message number %d. I choose option number %d: %s. Remember to only answer in JSON format.", claims.Step, response.Option, lastNode.Options[response.Option-1])
 	}
@@ -103,12 +109,28 @@ func Respond(c *gin.Context) {
 		Content: message,
 	})
 
-	messages := append([]openai.ChatCompletionMessage{}, Config.InitialMessages...)
+	var messages []openai.ChatCompletionMessage
+
+	if claims.Compression != nil {
+		messages = append(messages, Config.CompressionPromptMessages(claims.Compression.Step, claims.Compression.Message)...)
+	} else {
+		messages = append(messages, Config.PromptMessages...)
+	}
+
 	messages = append(messages, claims.Messages...)
 	resp, err := ai.Generate(messages)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	if len(claims.Messages) > Config.CompressionLimit {
+		claims.Compression, err = ai.Compress(messages, claims.Step)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		claims.Messages = nil
 	}
 
 	claims.Messages = append(claims.Messages, openai.ChatCompletionMessage{

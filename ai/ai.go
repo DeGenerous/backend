@@ -24,6 +24,11 @@ type Node struct {
 	Summary         string   `json:"summary" yaml:"summary,omitempty"`
 }
 
+type Compression struct {
+	Message string `json:"message"`
+	Step    int    `json:"step"`
+}
+
 const maxTries = 3
 
 func Generate(messages []openai.ChatCompletionMessage) (*Node, error) {
@@ -66,65 +71,41 @@ func Generate(messages []openai.ChatCompletionMessage) (*Node, error) {
 	return nil, err
 }
 
-func Compress(messages []openai.ChatCompletionMessage) ([]openai.ChatCompletionMessage, error) {
-	prompt := make([]openai.ChatCompletionMessage, len(messages)+len(Config.CompressMessages))
-	copy(prompt, messages)
-	copy(prompt[len(messages):], Config.CompressMessages)
-
+func Compress(messages []openai.ChatCompletionMessage, step int) (*Compression, error) {
 	var resp openai.ChatCompletionResponse
 	var err error
+
+	promptMessages := make([]openai.ChatCompletionMessage, len(messages))
+	copy(promptMessages, messages)
+	promptMessages = append(promptMessages, openai.ChatCompletionMessage{
+		Role:    "user",
+		Content: Config.CompressMessage,
+	})
 
 	for tries := 0; tries < maxTries; tries++ {
 		resp, err = client.CreateChatCompletion(
 			context.Background(),
 			openai.ChatCompletionRequest{
 				Model:    openai.GPT3Dot5Turbo,
-				Messages: prompt,
+				Messages: promptMessages,
 			},
 		)
 
-		if err == nil {
-			break
+		if err != nil {
+			continue
 		}
-	}
-	if err != nil {
-		return nil, err
-	}
 
-	ret := []openai.ChatCompletionMessage{{
-		Role:    "system",
-		Content: resp.Choices[0].Message.Content,
-	}}
+		respMsg := resp.Choices[0].Message.Content
 
-	return ret, nil
-}
-
-func Finish(messages []openai.ChatCompletionMessage) (string, error) {
-	prompt := make([]openai.ChatCompletionMessage, len(messages)+len(Config.FinishMessages))
-	copy(prompt, messages)
-	copy(prompt[len(messages):], Config.FinishMessages)
-
-	var resp openai.ChatCompletionResponse
-	var err error
-
-	for tries := 0; tries < maxTries; tries++ {
-		resp, err = client.CreateChatCompletion(
-			context.Background(),
-			openai.ChatCompletionRequest{
-				Model:    openai.GPT3Dot5Turbo,
-				Messages: prompt,
-			},
-		)
-
-		if err == nil {
-			break
+		ret := &Compression{
+			Message: respMsg,
+			Step:    step,
 		}
-	}
-	if err != nil {
-		return "", err
+
+		return ret, nil
 	}
 
-	return resp.Choices[0].Message.Content, nil
+	return nil, err
 }
 
 func Image(prompt string) (string, error) {
