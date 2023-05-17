@@ -59,6 +59,7 @@ func Start(c *gin.Context) {
 		"message": resp.Message,
 		"options": resp.Options,
 		"jwt":     token,
+		"step":    claims.Step,
 	})
 }
 
@@ -91,10 +92,6 @@ func Respond(c *gin.Context) {
 	if err = json.Unmarshal([]byte(lastMessage), &lastNode); err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
-	}
-
-	if claims.Compression != nil {
-
 	}
 
 	var message string
@@ -150,6 +147,7 @@ func Respond(c *gin.Context) {
 		"end":     resp.End,
 		"summary": resp.Summary,
 		"jwt":     token,
+		"step":    claims.Step,
 	})
 }
 
