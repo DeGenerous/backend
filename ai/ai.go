@@ -24,6 +24,10 @@ type Node struct {
 	Summary         string   `json:"summary" yaml:"summary,omitempty"`
 }
 
+type imageGeneration struct {
+	Prompt string `json:"prompt"`
+}
+
 type Compression struct {
 	Message string `json:"message"`
 	Step    int    `json:"step"`
@@ -108,20 +112,61 @@ func Compress(messages []openai.ChatCompletionMessage, step int) (*Compression, 
 	return nil, err
 }
 
-func Image(prompt string) (string, error) {
-	resp, err := client.CreateImage(
-		context.Background(),
-		openai.ImageRequest{
-			Prompt:         prompt + " " + Config.ImagePrompt,
-			N:              1,
-			Size:           openai.CreateImageSize256x256,
-			ResponseFormat: openai.CreateImageResponseFormatB64JSON,
-		},
-	)
+func Image(messages []openai.ChatCompletionMessage) (string, error) {
+	var resp openai.ChatCompletionResponse
+	var err error
 
-	if err != nil {
-		return "", err
+	promptMessages := make([]openai.ChatCompletionMessage, len(messages))
+	copy(promptMessages, messages)
+	promptMessages = append(promptMessages, openai.ChatCompletionMessage{
+		Role:    "user",
+		Content: Config.ImagePromptPrompt,
+	})
+
+	for tries := 0; tries < maxTries; tries++ {
+		resp, err = client.CreateChatCompletion(
+			context.Background(),
+			openai.ChatCompletionRequest{
+				Model:    openai.GPT3Dot5Turbo,
+				Messages: promptMessages,
+			},
+		)
+
+		if err != nil {
+			continue
+		}
+
+		respMsg := resp.Choices[0].Message.Content
+		jsonStart := strings.Index(respMsg, "{")
+		jsonEnd := strings.Index(respMsg, "}") + 1
+
+		if jsonStart == -1 || jsonEnd == -1 {
+			err = errors.New("unknown response")
+			continue
+		}
+
+		respMsg = respMsg[jsonStart:jsonEnd]
+		var image imageGeneration
+		if err = json.Unmarshal([]byte(respMsg), &image); err != nil {
+			continue
+		}
+
+		imgResp, err := client.CreateImage(
+			context.Background(),
+			openai.ImageRequest{
+				Prompt:         image.Prompt + ", " + Config.ImagePrompt,
+				N:              1,
+				Size:           openai.CreateImageSize256x256,
+				ResponseFormat: openai.CreateImageResponseFormatB64JSON,
+			},
+		)
+
+		if err != nil {
+			continue
+		}
+
+		return imgResp.Data[0].B64JSON, nil
 	}
 
-	return resp.Data[0].B64JSON, nil
+	return "", err
 }

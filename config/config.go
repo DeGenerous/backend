@@ -23,6 +23,7 @@ type config struct {
 	ChannelID         string                         `yaml:"channel_id"`
 	OpenAIToken       string                         `yaml:"ai_token"`
 	ImagePrompt       string                         `yaml:"image_prompt"`
+	ImagePromptPrompt string                         `yaml:"image_prompt_prompt"`
 	MaxSteps          int                            `yaml:"max_steps"`
 	CompressionLimit  int                            `yaml:"compression_limit"`
 	PromptMessages    []openai.ChatCompletionMessage `yaml:"prompt_messages"`

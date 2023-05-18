@@ -172,7 +172,7 @@ func Image(c *gin.Context) {
 		return
 	}
 
-	resp, err := ai.Image(claims.Messages[len(claims.Messages)-1].Content)
+	resp, err := ai.Image(claims.Messages)
 	if err != nil || !tkn.Valid {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
