@@ -390,7 +390,7 @@ func Login(context *gin.Context) {
 		MaxAge:   int((24 * time.Hour).Seconds()),
 		Secure:   true,
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	context.String(http.StatusOK, "")
