@@ -16,7 +16,7 @@ func NewStory(wallet string, storyId string) error {
 }
 
 func SetStep(storyId string, step int) error {
-	_, err := db.Exec("UPDATE stories SET step = $2 and image = false WHERE id = $1;", storyId, step)
+	_, err := db.Exec("UPDATE stories SET step = $2, image = false WHERE id = $1;", storyId, step)
 
 	return err
 }
