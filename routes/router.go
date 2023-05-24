@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"encoding/json"
@@ -384,6 +385,15 @@ func Login(context *gin.Context) {
 		return
 	}
 
+	var domain string
+
+	for _, url := range Config.CORSUrls {
+		origin := context.Request.Header.Get("Origin")
+		if strings.Contains(origin, url) {
+			domain = url
+		}
+	}
+
 	http.SetCookie(context.Writer, &http.Cookie{
 		Name:     "session",
 		Value:    sessionUUID.String(),
@@ -391,7 +401,7 @@ func Login(context *gin.Context) {
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteNoneMode,
-		Domain:   context.Request.Host,
+		Domain:   domain,
 	})
 
 	context.String(http.StatusOK, "")
