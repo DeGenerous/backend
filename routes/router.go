@@ -391,6 +391,7 @@ func Login(context *gin.Context) {
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteNoneMode,
+		Domain:   Config.Domain,
 	})
 
 	context.String(http.StatusOK, "")
