@@ -402,6 +402,7 @@ func Login(context *gin.Context) {
 		HttpOnly: true,
 		SameSite: http.SameSiteNoneMode,
 		Domain:   domain,
+		Path:     "/",
 	})
 
 	context.String(http.StatusOK, "")
