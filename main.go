@@ -8,6 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"backend/ai"
+	"backend/contracts"
+	"backend/database"
 	"backend/discord"
 	"backend/routes"
 
@@ -44,6 +46,16 @@ func main() {
 
 	ai.Init(Config.OpenAIToken)
 
+	if err := database.Init(); err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	if err := contracts.Init(); err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	if err := discord.Init(); err != nil {
 		fmt.Println(err)
 		return
@@ -57,9 +69,13 @@ func main() {
 
 	r := gin.Default()
 	r.Use(CORS)
-	r.POST("/start", routes.Start)
-	r.POST("/respond", routes.Respond)
-	r.POST("/image", routes.Image)
+	r.POST("/nonce", routes.GetNonce)
+	r.POST("/login", routes.Login)
+	r.POST("/logged-in", routes.IsAuth, routes.LoggedIn)
+	r.POST("/available", routes.IsAuth, routes.AvailableStories)
+	r.POST("/start", routes.IsAuth, routes.Start)
+	r.POST("/respond", routes.IsAuth, routes.Respond)
+	r.POST("/image", routes.IsAuth, routes.Image)
 
 	if err := r.Run(":" + strconv.Itoa(Config.Port)); err != nil {
 		fmt.Println(err)

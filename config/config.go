@@ -18,7 +18,6 @@ const configPath = "./config.yaml"
 type config struct {
 	CORSUrls          []string                       `yaml:"cors_urls"`
 	Port              int                            `yaml:"port"`
-	ContractAddress   string                         `yaml:"contract_address"`
 	DiscordToken      string                         `yaml:"discord_token"`
 	ChannelID         string                         `yaml:"channel_id"`
 	OpenAIToken       string                         `yaml:"ai_token"`
@@ -29,7 +28,19 @@ type config struct {
 	PromptMessages    []openai.ChatCompletionMessage `yaml:"prompt_messages"`
 	CompressMessage   string                         `yaml:"compress_message"`
 	CompressionPrompt string                         `yaml:"compression_prompt"`
-	Key               *rsa.PrivateKey
+	Contracts         struct {
+		Explorer string `yaml:"explorer"`
+		Nft      string `yaml:"nft"`
+	} `yaml:"contracts"`
+	Database struct {
+		Host     string `yaml:"host"`
+		Port     int    `yaml:"port"`
+		Name     string `yaml:"name"`
+		Username string `yaml:"user"`
+		Password string `yaml:"pass"`
+		Redis    string `yaml:"redis"`
+	} `yaml:"database"`
+	Key *rsa.PrivateKey
 }
 
 var Config config

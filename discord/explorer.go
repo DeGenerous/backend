@@ -61,7 +61,7 @@ func getNewest(limit int) (string, *bytes.Buffer) {
 		}
 	`
 
-	query := strings.Replace(strings.Replace(fmt.Sprintf(gqlQuery, Config.ContractAddress, limit), "\n", " ", -1), "\t", " ", -1)
+	query := strings.Replace(strings.Replace(fmt.Sprintf(gqlQuery, Config.Contracts.Nft, limit), "\n", " ", -1), "\t", " ", -1)
 	jsonQuery := fmt.Sprintf("{\"query\": \"%s\"}", query)
 
 	return gqlUrl, bytes.NewBuffer([]byte(jsonQuery))
@@ -79,7 +79,7 @@ func getImageQuery(id int) (string, *bytes.Buffer) {
 		}
 	`
 
-	query := strings.Replace(strings.Replace(fmt.Sprintf(gqlQuery, Config.ContractAddress, id), "\n", " ", -1), "\t", " ", -1)
+	query := strings.Replace(strings.Replace(fmt.Sprintf(gqlQuery, Config.Contracts.Nft, id), "\n", " ", -1), "\t", " ", -1)
 	jsonQuery := fmt.Sprintf("{\"query\": \"%s\"}", query)
 
 	return gqlUrl, bytes.NewBuffer([]byte(jsonQuery))
@@ -96,7 +96,7 @@ func getLowest(limit int) (string, *bytes.Buffer) {
 		}
 	`
 
-	query := strings.Replace(strings.Replace(fmt.Sprintf(gqlQuery, Config.ContractAddress, limit), "\n", " ", -1), "\t", " ", -1)
+	query := strings.Replace(strings.Replace(fmt.Sprintf(gqlQuery, Config.Contracts.Nft, limit), "\n", " ", -1), "\t", " ", -1)
 	jsonQuery := fmt.Sprintf("{\"query\": \"%s\"}", query)
 
 	return gqlUrl, bytes.NewBuffer([]byte(jsonQuery))
