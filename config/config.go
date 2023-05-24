@@ -17,7 +17,6 @@ const configPath = "./config.yaml"
 
 type config struct {
 	CORSUrls          []string                       `yaml:"cors_urls"`
-	Domain            string                         `yaml:"domain"`
 	Port              int                            `yaml:"port"`
 	DiscordToken      string                         `yaml:"discord_token"`
 	ChannelID         string                         `yaml:"channel_id"`
