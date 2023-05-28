@@ -393,6 +393,16 @@ func Login(context *gin.Context) {
 		SameSite: http.SameSiteStrictMode,
 	})
 
+	http.SetCookie(context.Writer, &http.Cookie{
+		Name:     "logged",
+		Value:    "true",
+		MaxAge:   int((24 * time.Hour).Seconds()),
+		Secure:   true,
+		HttpOnly: false,
+		Path:     "/",
+		SameSite: http.SameSiteStrictMode,
+	})
+
 	context.String(http.StatusOK, "")
 }
 
@@ -419,4 +429,27 @@ func IsAuth(context *gin.Context) {
 
 func LoggedIn(context *gin.Context) {
 	context.String(http.StatusOK, "User logged in")
+}
+
+func LogOut(c *gin.Context) {
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "session",
+		Value:    "",
+		MaxAge:   1,
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "logged",
+		Value:    "false",
+		MaxAge:   1,
+		Secure:   true,
+		HttpOnly: false,
+		Path:     "/",
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	c.String(http.StatusOK, "")
 }

@@ -72,6 +72,7 @@ func main() {
 	r.POST("/nonce", routes.GetNonce)
 	r.POST("/login", routes.Login)
 	r.POST("/logged-in", routes.IsAuth, routes.LoggedIn)
+	r.POST("/logout", routes.LogOut)
 	r.POST("/available", routes.IsAuth, routes.AvailableStories)
 	r.POST("/start", routes.IsAuth, routes.Start)
 	r.POST("/respond", routes.IsAuth, routes.Respond)
