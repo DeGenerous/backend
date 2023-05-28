@@ -28,6 +28,7 @@ type config struct {
 	PromptMessages    []openai.ChatCompletionMessage `yaml:"prompt_messages"`
 	CompressMessage   string                         `yaml:"compress_message"`
 	CompressionPrompt string                         `yaml:"compression_prompt"`
+	SignaturePrompt   string                         `yaml:"signature_prompt"`
 	Contracts         struct {
 		Explorer string `yaml:"explorer"`
 		Nft      string `yaml:"nft"`

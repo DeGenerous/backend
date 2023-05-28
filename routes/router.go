@@ -306,7 +306,8 @@ func GetNonce(c *gin.Context) {
 }
 
 func VerifySignature(wallet, signature, nonce string) (bool, error) {
-	nonceHash := crypto.Keccak256Hash([]byte("\x19Ethereum Signed Message:\n" + strconv.Itoa(len(nonce)) + nonce))
+	message := fmt.Sprintf(Config.SignaturePrompt, nonce)
+	nonceHash := crypto.Keccak256Hash([]byte("\x19Ethereum Signed Message:\n" + strconv.Itoa(len(message)) + message))
 	sigBytes, err := hexutil.Decode(signature)
 	if err != nil {
 		return false, err
