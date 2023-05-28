@@ -157,7 +157,7 @@ func Image(messages []openai.ChatCompletionMessage) (string, error) {
 			openai.ImageRequest{
 				Prompt:         image.Prompt + ", " + Config.ImagePrompt,
 				N:              1,
-				Size:           openai.CreateImageSize256x256,
+				Size:           openai.CreateImageSize512x512,
 				ResponseFormat: openai.CreateImageResponseFormatB64JSON,
 			},
 		)
