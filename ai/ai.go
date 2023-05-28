@@ -116,12 +116,13 @@ func Image(messages []openai.ChatCompletionMessage) (string, error) {
 	var resp openai.ChatCompletionResponse
 	var err error
 
-	promptMessages := make([]openai.ChatCompletionMessage, len(messages))
-	copy(promptMessages, messages)
-	promptMessages = append(promptMessages, openai.ChatCompletionMessage{
-		Role:    "user",
-		Content: Config.ImagePromptPrompt,
-	})
+	promptMessages := []openai.ChatCompletionMessage{
+		messages[len(messages)-1],
+		{
+			Role:    "user",
+			Content: Config.ImagePromptPrompt,
+		},
+	}
 
 	for tries := 0; tries < maxTries; tries++ {
 		resp, err = client.CreateChatCompletion(
