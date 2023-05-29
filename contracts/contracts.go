@@ -9,7 +9,7 @@ import (
 )
 
 const storiesPerToken = 1
-const storiesPerNeyon = 5
+const storiesPerNeyon = 10
 
 var nftContract *Nft
 
