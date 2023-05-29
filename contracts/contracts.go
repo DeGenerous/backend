@@ -8,6 +8,9 @@ import (
 	. "backend/config"
 )
 
+const storiesPerToken = 1
+const storiesPerNeyon = 5
+
 var nftContract *Nft
 
 func Init() error {
@@ -27,4 +30,17 @@ func Init() error {
 
 func TokensOfUser(userAddress string) ([]*big.Int, error) {
 	return nftContract.TokensOfOwner(nil, common.HexToAddress(userAddress))
+}
+
+func NumberOfStories(tokens []*big.Int) int {
+	number := 0
+	for _, token := range tokens {
+		if token.Int64() <= 10 {
+			number += storiesPerNeyon
+		} else {
+			number += storiesPerToken
+		}
+	}
+
+	return number
 }

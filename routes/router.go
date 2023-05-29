@@ -37,8 +37,6 @@ func signJWT(claims *Claims) (string, error) {
 	return tokenString, err
 }
 
-const storiesPerToken = 1
-
 func AvailableStories(c *gin.Context) {
 	wallet := c.GetString("wallet")
 
@@ -55,7 +53,7 @@ func AvailableStories(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"available": storiesPerToken * len(tokens),
+		"available": contracts.NumberOfStories(tokens),
 		"used":      used,
 	})
 }
@@ -75,7 +73,7 @@ func Start(c *gin.Context) {
 		return
 	}
 
-	if used >= storiesPerToken*len(tokens) {
+	if used >= contracts.NumberOfStories(tokens) {
 		c.String(http.StatusBadRequest, "Too many stories played, try again tomorrow")
 		return
 	}
