@@ -311,7 +311,10 @@ func VerifySignature(wallet, signature, nonce string) (bool, error) {
 		return false, err
 	}
 
-	sigBytes[64] -= 27
+	if sigBytes[64] == 27 || sigBytes[64] == 28 {
+		sigBytes[64] -= 27
+	}
+
 	pub, err := crypto.Ecrecover(nonceHash.Bytes(), sigBytes)
 	if err != nil {
 		return false, err
