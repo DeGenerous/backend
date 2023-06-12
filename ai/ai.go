@@ -67,6 +67,10 @@ func Generate(messages []openai.ChatCompletionMessage) (*Node, error) {
 			continue
 		}
 
+		if len(node.Options) < 2 && tries < maxTries-1 {
+			continue
+		}
+
 		node.OriginalMessage = respMsg
 
 		return &node, nil
