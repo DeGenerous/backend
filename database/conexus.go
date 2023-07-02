@@ -3,7 +3,7 @@ package database
 func UsedStories(wallet string) (int, error) {
 	var number int
 
-	row := db.QueryRow("SELECT count(stories.id) FROM stories, users WHERE stories.user_id = users.id and users.wallet = $1 and stories.created >= NOW() - INTERVAL '24 HOURS';", wallet)
+	row := db.QueryRow("SELECT count(stories.id) FROM stories, users WHERE stories.user_id = users.id and users.wallet = $1 and stories.created >= NOW() - INTERVAL '24 HOURS' and stories.bonus = false;", wallet)
 	err := row.Scan(&number)
 
 	return number, err
@@ -24,8 +24,27 @@ func UseBonus(wallet string) error {
 	return err
 }
 
-func NewStory(wallet string, storyId string) error {
-	_, err := db.Exec("INSERT INTO stories(id, user_id) VALUES ($1, (SELECT id from users where wallet = $2));", storyId, wallet)
+func GeneratePrompt(category string) (int, string, error) {
+	var id int
+	var prompt string
+
+	row := db.QueryRow("SELECT id, prompt FROM get_prompt($1) AS (id bigint, prompt text);", category)
+	err := row.Scan(&id, &prompt)
+
+	return id, prompt, err
+}
+
+func GetPrompt(id int) (string, error) {
+	var prompt string
+
+	row := db.QueryRow("SELECT prompt from prompts where id = $1;", id)
+	err := row.Scan(&prompt)
+
+	return prompt, err
+}
+
+func NewStory(wallet string, storyId string, bonus bool) error {
+	_, err := db.Exec("INSERT INTO stories(id, user_id, bonus) VALUES ($1, (SELECT id from users where wallet = $2), $3);", storyId, wallet, bonus)
 
 	return err
 }

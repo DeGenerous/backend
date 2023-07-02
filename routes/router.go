@@ -25,6 +25,7 @@ import (
 
 type Claims struct {
 	ID          string                         `json:"id"`
+	Prompt      int                            `json:"prompt"`
 	Messages    []openai.ChatCompletionMessage `json:"messages"`
 	Step        int                            `json:"step"`
 	Compression *ai.Compression                `json:"compression"`
@@ -80,6 +81,8 @@ func Start(c *gin.Context) {
 		return
 	}
 
+	isBonus := false
+
 	if used >= contracts.NumberOfStories(tokens) {
 		bonus, err := database.BonusStories(wallet)
 		if err != nil {
@@ -96,17 +99,31 @@ func Start(c *gin.Context) {
 			c.String(http.StatusInternalServerError, err.Error())
 			return
 		}
+
+		isBonus = true
 	}
 
 	id := uuid.NewString()
-	resp, err := ai.Generate(Config.PromptMessages)
+
+	promptId, prompt, err := database.GeneratePrompt("general")
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	var messages []openai.ChatCompletionMessage
+	messages = append(messages, Config.PromptMessages...)
+	messages[0].Content += prompt
+
+	resp, err := ai.Generate(messages)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	claims := &Claims{
-		ID: id,
+		ID:     id,
+		Prompt: promptId,
 		Messages: []openai.ChatCompletionMessage{{
 			Role:    "assistant",
 			Content: resp.OriginalMessage,
@@ -124,7 +141,7 @@ func Start(c *gin.Context) {
 		return
 	}
 
-	if err := database.NewStory(wallet, id); err != nil {
+	if err := database.NewStory(wallet, id, isBonus); err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -198,6 +215,13 @@ func Respond(c *gin.Context) {
 	} else {
 		messages = append(messages, Config.PromptMessages...)
 	}
+
+	prompt, err := database.GetPrompt(claims.Prompt)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	messages[0].Content += prompt
 
 	messages = append(messages, claims.Messages...)
 	resp, err := ai.Generate(messages)
