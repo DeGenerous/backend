@@ -9,6 +9,21 @@ func UsedStories(wallet string) (int, error) {
 	return number, err
 }
 
+func BonusStories(wallet string) (int, error) {
+	var number int
+
+	row := db.QueryRow("SELECT bonus - users.used_bonus FROM users WHERE wallet = $1;", wallet)
+	err := row.Scan(&number)
+
+	return number, err
+}
+
+func UseBonus(wallet string) error {
+	_, err := db.Exec("UPDATE users SET used_bonus = used_bonus + 1 WHERE wallet = $1;", wallet)
+
+	return err
+}
+
 func NewStory(wallet string, storyId string) error {
 	_, err := db.Exec("INSERT INTO stories(id, user_id) VALUES ($1, (SELECT id from users where wallet = $2));", storyId, wallet)
 

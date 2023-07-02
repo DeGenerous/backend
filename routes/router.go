@@ -52,9 +52,16 @@ func AvailableStories(c *gin.Context) {
 		return
 	}
 
+	bonus, err := database.BonusStories(wallet)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"available": contracts.NumberOfStories(tokens),
 		"used":      used,
+		"bonus":     bonus,
 	})
 }
 
@@ -74,8 +81,21 @@ func Start(c *gin.Context) {
 	}
 
 	if used >= contracts.NumberOfStories(tokens) {
-		c.String(http.StatusBadRequest, "Too many stories played, try again tomorrow")
-		return
+		bonus, err := database.BonusStories(wallet)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		if bonus <= 0 {
+			c.String(http.StatusBadRequest, "Too many stories played, try again tomorrow")
+			return
+		}
+
+		if err := database.UseBonus(wallet); err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
 	}
 
 	id := uuid.NewString()
