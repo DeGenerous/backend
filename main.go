@@ -73,9 +73,9 @@ func main() {
 	r.POST("/login", routes.Login)
 	r.POST("/logged-in", routes.IsAuth, routes.LoggedIn)
 	r.POST("/logout", routes.LogOut)
-	r.POST("/available", routes.IsAuth, routes.AvailableStories)
-	r.POST("/start", routes.IsAuth, routes.Start)
-	r.POST("/respond", routes.IsAuth, routes.Respond)
+	r.POST("/available", routes.IsAuth, routes.RegenerateSession, routes.AvailableStories)
+	r.POST("/start", routes.IsAuth, routes.RegenerateSession, routes.Start)
+	r.POST("/respond", routes.IsAuth, routes.RegenerateSession, routes.Respond)
 	r.POST("/image", routes.IsAuth, routes.Image)
 
 	if err := r.Run(":" + strconv.Itoa(Config.Port)); err != nil {

@@ -3,12 +3,11 @@ package routes
 import (
 	"backend/contracts"
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 	"time"
-
-	"encoding/json"
-	"net/http"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -374,6 +373,65 @@ func VerifySignature(wallet, signature, nonce string) (bool, error) {
 	return bytes.Compare(pubHash.Bytes()[12:], walletHex) == 0, nil
 }
 
+func generateSession(context *gin.Context, wallet string) {
+	nonceUUID, err := uuid.NewRandom()
+	if err != nil {
+		context.String(http.StatusInternalServerError, "Error creating nonce")
+		return
+	}
+
+	session, err := context.Cookie("session")
+	if err == nil {
+		if status := database.RedisClient.Del(database.RedisContext, "session: "+session); status.Err() != nil {
+			context.String(http.StatusInternalServerError, "Error connecting to session database")
+			return
+		}
+	}
+
+	err = database.SetNonce(wallet, nonceUUID.String())
+	if err != nil {
+		context.String(http.StatusInternalServerError, "Error updating nonce")
+		return
+	}
+
+	sessionUUID, err := uuid.NewRandom()
+	if err != nil {
+		context.String(http.StatusInternalServerError, "Error creating session")
+		return
+	}
+
+	status := database.RedisClient.SetEX(database.RedisContext, "session: "+sessionUUID.String(), wallet, 24*time.Hour)
+	if status.Err() != nil {
+		context.String(http.StatusInternalServerError, "Error creating session")
+		return
+	}
+
+	http.SetCookie(context.Writer, &http.Cookie{
+		Name:     "session",
+		Value:    sessionUUID.String(),
+		MaxAge:   int((24 * time.Hour).Seconds()),
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	http.SetCookie(context.Writer, &http.Cookie{
+		Name:     "logged",
+		Value:    "true",
+		MaxAge:   int((24 * time.Hour).Seconds()),
+		Secure:   true,
+		HttpOnly: false,
+		Path:     "/",
+		SameSite: http.SameSiteStrictMode,
+	})
+}
+
+func RegenerateSession(context *gin.Context) {
+	wallet := context.GetString("wallet")
+
+	generateSession(context, wallet)
+}
+
 func Login(context *gin.Context) {
 	type Body struct {
 		Wallet    string `json:"wallet"`
@@ -398,56 +456,7 @@ func Login(context *gin.Context) {
 		return
 	}
 
-	nonceUUID, err := uuid.NewRandom()
-	if err != nil {
-		context.String(http.StatusInternalServerError, "Error creating nonce")
-		return
-	}
-
-	session, err := context.Cookie("session")
-	if err == nil {
-		if status := database.RedisClient.Del(database.RedisContext, "session: "+session); status.Err() != nil {
-			context.String(http.StatusInternalServerError, "Error connecting to session database")
-			return
-		}
-	}
-
-	err = database.SetNonce(response.Wallet, nonceUUID.String())
-	if err != nil {
-		context.String(http.StatusInternalServerError, "Error updating nonce")
-		return
-	}
-
-	sessionUUID, err := uuid.NewRandom()
-	if err != nil {
-		context.String(http.StatusInternalServerError, "Error creating session")
-		return
-	}
-
-	status := database.RedisClient.SetEX(database.RedisContext, "session: "+sessionUUID.String(), response.Wallet, 24*time.Hour)
-	if status.Err() != nil {
-		context.String(http.StatusInternalServerError, "Error creating session")
-		return
-	}
-
-	http.SetCookie(context.Writer, &http.Cookie{
-		Name:     "session",
-		Value:    sessionUUID.String(),
-		MaxAge:   int((24 * time.Hour).Seconds()),
-		Secure:   true,
-		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
-	})
-
-	http.SetCookie(context.Writer, &http.Cookie{
-		Name:     "logged",
-		Value:    "true",
-		MaxAge:   int((24 * time.Hour).Seconds()),
-		Secure:   true,
-		HttpOnly: false,
-		Path:     "/",
-		SameSite: http.SameSiteStrictMode,
-	})
+	generateSession(context, response.Wallet)
 
 	context.String(http.StatusOK, "")
 }
