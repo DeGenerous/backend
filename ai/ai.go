@@ -33,7 +33,7 @@ type Compression struct {
 	Step    int    `json:"step"`
 }
 
-const maxTries = 3
+const maxTries = 5
 
 func Generate(messages []openai.ChatCompletionMessage) (*Node, error) {
 	var resp openai.ChatCompletionResponse
@@ -69,6 +69,12 @@ func Generate(messages []openai.ChatCompletionMessage) (*Node, error) {
 
 		if len(node.Options) < 2 && tries < maxTries-1 {
 			continue
+		}
+
+		if node.End {
+			if len(node.Message) == 0 || len(node.Summary) == 0 {
+				continue
+			}
 		}
 
 		node.OriginalMessage = respMsg
